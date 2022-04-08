@@ -4,7 +4,7 @@
     "email": "a@oshev.ru"
   },
   "dependencies": {
-    "miio": "latest"
+    "miio-api": "latest"
   },
   "description": "Miio node for Smartmi humidifier (Xiaomi)",
   "keywords": [
@@ -25,5 +25,8 @@
       "api": "api.js"
     }
   },
-  "version": "0.9.5"
+  "version": "0.9.5",
+  "scripts": {
+    "start": "node-red"
+  }
 }

@@ -18,10 +18,8 @@
         "set_power": "Power",
         "set_mode": "Mode",
         "set_limit_hum": "Limit Humidity",
-        "set_led_b": "Led Brightness (doesn't work)",
-        "set_buzzer": "Sound",
-        "set_dry": "Dry",
-        "set_child_lock": "Child Lock"
+        "set_led_b": "Led Brightness",
+        "set_buzzer": "Sound"
     },
     "arguments": {
         "on": "On",
@@ -29,8 +27,8 @@
         "max": "Max",
         "mid": "Mid",
         "none": "None",
-        "auto": "Auto",
-        "silent": "Silent",
+        "low": "Low",
+        "humidity": "Humidity",
         "medium": "Medium",
         "high": "High"
     }

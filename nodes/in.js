@@ -1,6 +1,3 @@
-const miio = require('miio');
-
-
 module.exports = function (RED) {
     class MiioHumidifierInput {
         constructor(config) {
@@ -43,14 +40,14 @@ module.exports = function (RED) {
             var node = this;
 
             if (Object.keys(node.server.status).length) {
-                var isOn = node.server.status.power === 'on';
-                var waterLevel = Math.ceil(node.server.status.depth / 1.2);
+                var isOn = node.server.status.power === 1;
+                var waterLevel = Math.ceil(node.server.status.depth * 100);
                 var mode = node.server.status.mode;
 
                 var status = {
                     fill: waterLevel <= 15 ? "yellow" : (isOn ? "green" : "red"),
                     shape: "dot",
-                    text: (isOn ? "On (" + mode + ")" : "Off") + ',  ' + node.server.status.humidity + '%, ' + (!isNaN(parseFloat(node.server.status.temp_dec)) && isFinite(node.server.status.temp_dec)?(node.server.status.temp_dec / 10).toFixed(1) + '℃':'') + ' 💧' + waterLevel
+                    text: (isOn ? "On (" + mode + ")" : "Off") + ',  ' + node.server.status.humidity + '%, ' + (!isNaN(node.server.status.temp_dec)? node.server.status.temp_dec + '℃':'') + ' 💧' + waterLevel
                 };
 
                 node.status(status);
@@ -117,37 +114,27 @@ module.exports = function (RED) {
             var status = node.server.status;
             var msg = {};
 
-            if (status.power === "on") {
+            if (status.power === 1) {
                 msg.Active = 1;
                 msg.CurrentHumidifierDehumidifierState = 2;
-            } else if (status.power === "off") {
+            } else if (status.power === 0) {
                 msg.Active = 0;
                 msg.CurrentHumidifierDehumidifierState = 0;
             }
-            if (status.child_lock === "on") {
-                msg.LockPhysicalControls = 1;
-            } else if (status.child_lock === "off") {
-                msg.LockPhysicalControls = 0;
-            }
-            if (status.dry === "on") {
-                msg.SwingMode = 1;
-            } else if (status.dry === "off") {
-                msg.SwingMode = 0;
-            }
 
-            if (status.mode === "auto") {
+            if (status.mode === 1) {
                 msg.RotationSpeed = 25;
-            } else if (status.mode === "silent") {
+            } else if (status.mode === 2) {
                 msg.RotationSpeed = 50;
-            } else if (status.mode === "medium") {
+            } else if (status.mode === 3) {
                 msg.RotationSpeed = 75;
-            } else if (status.mode === "high") {
+            } else if (status.mode === 4) {
                 msg.RotationSpeed = 100;
             } else {
                 msg.RotationSpeed = 0;
             }
 
-            msg.WaterLevel = status.depth <= 120?Math.ceil(status.depth / 1.2):100;
+            msg.WaterLevel = status.depth * 100;
             msg.CurrentRelativeHumidity = status.humidity;
             msg.TargetHumidifierDehumidifierState = 1;
             msg.RelativeHumidityHumidifierThreshold = status.limit_hum;

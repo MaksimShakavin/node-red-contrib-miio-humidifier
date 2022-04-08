@@ -1,4 +1,3 @@
-const miio = require('miio');
 
 module.exports = function (RED) {
     class MiioHumidifierOutput {
@@ -81,10 +80,9 @@ module.exports = function (RED) {
                         switch (command) {
                             case "set_power":
                             case "set_buzzer":
-                            case "set_dry":
-                            case "set_child_lock":
-                                if (payload === 'on' || payload === 1 || payload === '1' || payload === true) payload = 'on';
-                                if (payload === 'off' || payload === 0 || payload === '0' || payload === false) payload = 'off';
+                            case "set_led_b":
+                                if (payload === 'on' || payload === 1 || payload === '1' || payload === true) payload = 1;
+                                if (payload === 'off' || payload === 0 || payload === '0' || payload === false) payload = 0;
                                 break;
 
                             default: {
@@ -133,12 +131,13 @@ module.exports = function (RED) {
             if (device === undefined) return false;
             if (command === null) return false;
             if (payload === undefined) payload = [];
-            if (payload && typeof(payload) !== 'object') payload = [payload];
+            if (typeof(payload) !== 'object') payload = [payload];
 
             // console.log('BEFORE SEND:');
             // console.log({command:command,payload:payload});
 
-            return device.call(command, payload).then(result => {
+            const mappedCommand = this.mapCommand(command);
+            return device.call(mappedCommand, payload).then(result => {
                 var status = {
                     fill: "green",
                     shape: "dot",
@@ -171,48 +170,52 @@ module.exports = function (RED) {
             });
         }
 
-        formatHomeKit(message, payload) {
-            if (message.hap.context === undefined) {
-                return null;
+        mapCommand(command) {
+            switch (command) {
+                case 'set_power':
+                    return 'Set_OnOff';
+                case 'set_buzzer':
+                    return 'SetTipSound_Status';
+                case 'set_mode':
+                    return 'Set_HumidifierGears';
+                case 'set_limit_hum':
+                    return 'Set_HumiValue'
+                case 'set_led_b':
+                    return 'SetLedState'
+                default:
+                    return command;
             }
+        }
 
+        formatHomeKit(message, payload) {
             var msg = {};
-
             if (Object.keys(payload).length) {
                 if (payload.RelativeHumidityHumidifierThreshold !== undefined) {
-                    var value = payload.RelativeHumidityHumidifierThreshold;
+                    let value = payload.RelativeHumidityHumidifierThreshold;
                     if (value > 0 && value <= 40) {
                         value = 40;
-                    } else if (value > 80 && value <= 100) {
-                        value = 80;
+                    } else if (value > 70 && value <= 100) {
+                        value = 70;
                     }
 
                     msg["set_limit_hum"] = value;
                 }
 
                 if (payload.Active !== undefined) {
-                    msg["set_power"] = Boolean(payload.Active) ? "on" : "off";
-                }
-
-                if (payload.SwingMode !== undefined) {
-                    msg["set_dry"] = Boolean(payload.SwingMode) ? "on" : "off";
-                }
-
-                if (payload.LockPhysicalControls !== undefined) {
-                    msg["set_child_lock"] = Boolean(payload.LockPhysicalControls) ? "on" : "off";
+                    msg["set_power"] = Boolean(payload.Active) ? 1 : 0;
                 }
 
                 if (payload.RotationSpeed !== undefined) {
                     var value = payload.RotationSpeed;
-                    var newVal = 'auto';
+                    var newVal;
                     if (value <= 25) {
-                        newVal = 'auto';
+                        newVal = 1;
                     } else if (value > 25 && value <= 50) {
-                        newVal = 'silent';
+                        newVal = 2;
                     } else if (value > 50 && value <= 75) {
-                        newVal = 'medium';
+                        newVal = 3;
                     } else if (value > 75) {
-                        newVal = 'high';
+                        newVal = 4;
                     }
 
                     msg["set_mode"] = newVal;

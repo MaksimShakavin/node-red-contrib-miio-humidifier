@@ -1,5 +1,4 @@
-const EventEmitter = require('events');
-const miio = require('miio');
+const miio = require('miio-api');
 
 module.exports = function (RED) {
     class ServerNode {
@@ -46,18 +45,8 @@ module.exports = function (RED) {
                     token: node.config.token
                 }).then(device => {
                     node.device = device;
-                    node.device.updateMaxPollFailures(0);
-
-                    node.device.on('thing:initialized', () => {
-                        node.log('Miio humiditifier: Initialized');
-                    });
-
-                    node.device.on('thing:destroyed', () => {
-                        node.log('Miio humiditifier: Destroyed');
-                    });
-
+                    node.log('Miio humiditifier: Initialized');
                     resolve(device);
-
                 }).catch(err => {
                     node.emit('onConnectionError', err.message);
                     node.warn('Miio humiditifier Error: ' + err.message);
@@ -69,44 +58,69 @@ module.exports = function (RED) {
         getStatus(force = false) {
             var that = this;
 
+            async function mapSeries(args, action) {
+                const results = [];
+                for (const arg of args) {
+                    results.push(await action(arg));
+                }
+                return results;
+            }
+
             return new Promise(function (resolve, reject) {
                 if (force || !that.status) {
                     if (that.device !== null && that.device !== undefined) {
-                        that.device.loadProperties(["power", "humidity", "child_lock", "dry", "depth", "limit_hum", "mode", "buzzer", "led_b", "temp_dec", "temperature"]).then(result => {
+                        const props = ["OnOff_State", "Humidity_Value", "waterstatus", "HumiSet_Value", "Humidifier_Gear", "TipSound_State", "Led_State", "TemperatureValue"];
+                        mapSeries(props, async (key) => {
+                            return await that.device.call('get_prop', [key])
+                        })
+                            .then(resultsArr => {
+                                const [power, humidity, depth, limit_hum, mode, buzzer, led_b, temp_dec] = resultsArr.flatMap(res => res);
+                                return {
+                                    power, humidity, depth, limit_hum, buzzer, mode, led_b, temp_dec
+                                }
+                            })
+                            .then(result => {
 
-                            if (result.temp_dec == "null" && parseFloat(result.temperature))
-                                result.temp_dec = parseFloat(result.temperature) * 10; //fix temperature for zhimi.humidifier.cb1
+                                that.emit("onState", result);
 
-                            that.emit("onState", result);
-
-                            for (var key in result) {
-                                var value = result[key];
-                                if (key in that.status) {
-                                    if (!(key in that.status) || that.status[key] !== value) {
+                                for (var key in result) {
+                                    var value = result[key];
+                                    if (key in that.status) {
+                                        if (!(key in that.status) || that.status[key] !== value) {
+                                            that.status[key] = value;
+                                            that.emit("onStateChanged", {
+                                                key: key,
+                                                value: value
+                                            }, true);
+                                        }
+                                    } else { //init: silent add
                                         that.status[key] = value;
                                         that.emit("onStateChanged", {
                                             key: key,
                                             value: value
-                                        }, true);
+                                        }, false);
                                     }
-                                } else { //init: silent add
-                                    that.status[key] = value;
-                                    that.emit("onStateChanged", {
-                                        key: key,
-                                        value: value
-                                    }, false);
                                 }
-                            }
+                                resolve(that.status);
+                            })
+                            .catch(err => {
+                                console.log('Encountered an error while controlling device');
+                                console.log('Error(1) was:');
+                                console.log(err.message);
+                                that.status = {};
+                                that.emit('onConnectionError', err.message);
+                                reject(err);
+                            });
+                        //TODO remove child_lock dry
+                        // power -> OnOff_State
+                        // humidity -> Humidity_Value
+                        // depth -> waterstatus
+                        // limit_hum -> HumiSet_Value
+                        // buzzer -> TipSound_State
+                        // mode -> Humidifier_Gear
+                        // led_b -> Led_State
+                        // temp_dec -> TemperatureValue
 
-                            resolve(that.status);
-                        }).catch(err => {
-                            console.log('Encountered an error while controlling device');
-                            console.log('Error(1) was:');
-                            console.log(err.message);
-                            that.status = {};
-                            that.emit('onConnectionError', err.message);
-                            reject(err);
-                        });
 
                     } else {
                         that.connect();

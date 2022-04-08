@@ -1,4 +1,3 @@
-const miio = require('miio');
 
 
 module.exports = function (RED) {

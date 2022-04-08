@@ -77,8 +77,6 @@
                     {'value':'set_limit_hum', 'label':RED._("node-red-contrib-miio-humidifier/out:commands.set_limit_hum")},
                     {'value':'set_led_b', 'label':RED._("node-red-contrib-miio-humidifier/out:commands.set_led_b")},
                     {'value':'set_buzzer', 'label':RED._("node-red-contrib-miio-humidifier/out:commands.set_buzzer")},
-                    {'value':'set_dry', 'label':RED._("node-red-contrib-miio-humidifier/out:commands.set_dry")},
-                    {'value':'set_child_lock', 'label':RED._("node-red-contrib-miio-humidifier/out:commands.set_child_lock")}
                 ]
             };
             $('#node-input-command').typedInput({
@@ -97,23 +95,22 @@
                 //chane options
                 var miioOptions = {};
 
-                if ('set_power' === val || 'set_child_lock' === val || 'set_dry' === val || 'set_buzzer' === val) {
+                if ('set_power' === val || 'set_buzzer' === val) {
                     miioOptions =  [
                         {'value':'on', 'label':RED._("node-red-contrib-miio-humidifier/out:arguments.on")},
                         {'value':'off', 'label':RED._("node-red-contrib-miio-humidifier/out:arguments.off")}
                     ];
                 } else if ('set_mode' === val) {
                     miioOptions =  [
-                        {'value':'auto', 'label':RED._("node-red-contrib-miio-humidifier/out:arguments.auto")},
-                        {'value':'silent', 'label':RED._("node-red-contrib-miio-humidifier/out:arguments.silent")},
-                        {'value':'medium', 'label':RED._("node-red-contrib-miio-humidifier/out:arguments.medium")},
-                        {'value':'high', 'label':RED._("node-red-contrib-miio-humidifier/out:arguments.high")}
+                        {'value':'1', 'label':RED._("node-red-contrib-miio-humidifier/out:arguments.low")},
+                        {'value':'2', 'label':RED._("node-red-contrib-miio-humidifier/out:arguments.medium")},
+                        {'value':'3', 'label':RED._("node-red-contrib-miio-humidifier/out:arguments.high")},
+                        {'value':'4', 'label':RED._("node-red-contrib-miio-humidifier/out:arguments.humidity")}
                     ];
                 } else if ('set_led_b' === val) {
                     miioOptions =  [
-                        {'value':'0', 'label':RED._("node-red-contrib-miio-humidifier/out:arguments.max")},
-                        {'value':'1', 'label':RED._("node-red-contrib-miio-humidifier/out:arguments.mid")},
-                        {'value':'2', 'label':RED._("node-red-contrib-miio-humidifier/out:arguments.none")}
+                        {'value':'on', 'label':RED._("node-red-contrib-miio-humidifier/out:arguments.on")},
+                        {'value':'off', 'label':RED._("node-red-contrib-miio-humidifier/out:arguments.off")},
                     ];
                 } else if ('set_limit_hum' === val) {
                     miioOptions =  [
